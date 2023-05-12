@@ -1,4 +1,6 @@
 ﻿using Rdx.Core.Exceptions;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace Rdx.Core;
 
@@ -8,15 +10,18 @@ namespace Rdx.Core;
 /// 1. Incrementing major zeroes minor and revision
 /// 2. Incrementing minor zeroes revision
 /// 3. Incrementing revision has no other effects
-/// 4. Incrementing build has not other effects
+/// 4. Incrementing build has no other effects
 /// 5. When comparing two RdVersion instances, only major, minor, and revision are compared
 /// 6. When testing for equality between two RdVersion instances, only major and minor must be equal
 /// </summary>
+[DebuggerDisplay($"{{{nameof(Info)},nq}}")]
 public class RdVersion : IEquatable<RdVersion>, IComparable<RdVersion>
 {
     // TODO: remove DELIMITER option and settle on '.'
 
     private const string DELIMITER = ".";
+    private const string ALT_DELIMITER = "-";
+
     private int _major, _minor, _revision, _build;
 
     public RdVersion() { }
@@ -36,38 +41,28 @@ public class RdVersion : IEquatable<RdVersion>, IComparable<RdVersion>
 
     public bool IsZero => _major == 0 && _minor == 0 && _revision == 0 && _build == 0;
 
+    /// <summary>
+    /// Converts a version string ("1.2.3" or "1.2.3.4") into 4 numeric parts.  Only
+    /// the last part of a 4-element version is optional,  Throws an exception if
+    /// there are any conversion problems.
+    /// </summary>
     public virtual string Parse(string version, string delimiter = DELIMITER)
     {
         var parts = version.Split(delimiter);
-        switch (parts.Length)
+        try
         {
-            case 0:
-                throw new RdxInvalidInstanceException($"Cannot parse '{version}' into a Version instance using the '{delimiter}' delimiter.");
-            case 1:
-                if (!Int32.TryParse(parts[0], out int major)) throw iiex(parts[0]);
-                _major = major;
-                break;
-            case 2:
-                if (!Int32.TryParse(parts[1], out int minor)) throw iiex(parts[1]);
-                _minor = minor;
-                break;
-            case 3:
-                if (!Int32.TryParse(parts[2], out int revision)) throw iiex(parts[2]);
-                _revision = revision;
-                break;
-            case 4:
-                if (!Int32.TryParse(parts[3], out int build)) throw iiex(parts[3]);
-                _build = build;
-                break;
-            default:
-                break;
-        }
-        return FormattedVersion;
+            _major = int.Parse(parts[0]);
+            _minor = int.Parse(parts[1]);
+            _revision = int.Parse(parts[2]);
+            if (parts.Length > 3)
+            {
+                _build = int.Parse(parts[3]);
+            }
+            return FormattedVersion;
 
-        // :::::::::::::::::::::::::
-        Exception iiex(string element)
+        } catch (Exception)
         {
-            return new RdxInvalidInstanceException($"Cannot parse '{element}' into a meaningful part of a Version.");
+            throw new RdxInvalidInstanceException($"Cannot parse '{version}' into a meaningful Version.");
         }
     }
 
@@ -107,24 +102,33 @@ public class RdVersion : IEquatable<RdVersion>, IComparable<RdVersion>
     /// </summary>
     public string IncrementBuild()
     {
-        _revision += 1;
+        _build += 1;
         return FormattedVersion;
     }
 
+    /// <summary>
+    /// Returns version as a four-valued string in the dotted form: 3.4.5.6
+    /// </summary>
     public string FormattedVersion => $"{_major}{DELIMITER}{_minor}{DELIMITER}{_revision}{DELIMITER}{_build}";
+
+    /// <summary>
+    /// Returns version as a three-valued string in the dashed form: 3-4-5
+    /// </summary>
+    public string AltFormattedVersion => $"{_major}{ALT_DELIMITER}{_minor}{ALT_DELIMITER}{_revision}";
 
     /// <summary>
     /// Compares major, minor, and revision values - build is ignored.
     /// </summary>
     public int CompareTo(RdVersion? other)
     {
-        if (other is null) return (int)StatusCode.COMPARES_AS_LESS;
-        if (this._major > other._major) return (int)StatusCode.COMPARES_AS_LESS;
-        if (this._minor > other._minor) return (int)StatusCode.COMPARES_AS_LESS;
-        if (this._revision > other._revision) return (int)StatusCode.COMPARES_AS_LESS;
-        if (this._major < other._major) return (int)StatusCode.COMPARES_AS_MORE;
-        if (this._minor < other._minor) return (int)StatusCode.COMPARES_AS_MORE;
-        if (this._revision < other._revision) return (int)StatusCode.COMPARES_AS_MORE;
+        if (other is null) return (int)StatusCode.COMPARES_AS_MORE;
+        if (this._major > other._major) return (int)StatusCode.COMPARES_AS_MORE;
+        if (this._minor > other._minor) return (int)StatusCode.COMPARES_AS_MORE;
+        if (this._revision > other._revision) return (int)StatusCode.COMPARES_AS_MORE;
+
+        if (this._major < other._major) return (int)StatusCode.COMPARES_AS_LESS;
+        if (this._minor < other._minor) return (int)StatusCode.COMPARES_AS_LESS;
+        if (this._revision < other._revision) return (int)StatusCode.COMPARES_AS_LESS;
         return (int)StatusCode.OK;  // equal
     }
 
@@ -139,18 +143,21 @@ public class RdVersion : IEquatable<RdVersion>, IComparable<RdVersion>
     {
         return other is not null
             && _major == other._major
-            && _minor == other._minor;
+            && _minor == other._minor
+            && _revision == other._revision;
     }
 
-    public override int GetHashCode() => HashCode.Combine(_major, _minor);
+    public override int GetHashCode() => HashCode.Combine(_major, _minor, _revision);
 
     public static bool operator ==(RdVersion left, RdVersion right) => left is null ? right is null : left.Equals(right);
-    public static bool operator !=(RdVersion left, RdVersion right) => left is null ? right is not null : left.Equals(right);
+    public static bool operator !=(RdVersion left, RdVersion right) => left is null ? right is not null : !left.Equals(right);
 
-    public static bool operator <(RdVersion left, RdVersion right) => left is null ? right is not null : left.CompareTo(right) < 0;
-    public static bool operator <=(RdVersion left, RdVersion right) => left is null || left.CompareTo(right) <= 0;
-    public static bool operator >(RdVersion left, RdVersion right) => left is not null && left.CompareTo(right) > 0;
-    public static bool operator >=(RdVersion left, RdVersion right) => left is null ? right is null : left.CompareTo(right) >= 0;
+    public static bool operator <(RdVersion left, RdVersion right) => left is null ? right is not null : left.CompareTo(right) > 0;
+    public static bool operator <=(RdVersion left, RdVersion right) => left is null || left.CompareTo(right) >= 0;
+    public static bool operator >(RdVersion left, RdVersion right) => left is not null && left.CompareTo(right) < 0;
+    public static bool operator >=(RdVersion left, RdVersion right) => left is null ? right is null : left.CompareTo(right) <= 0;
 
     public static RdVersion Zero => new RdVersion("0.0.0.0");
+
+    private string Info => $"{FormattedVersion} ({AltFormattedVersion})";
 }

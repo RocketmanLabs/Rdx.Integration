@@ -1,3 +1,0 @@
-﻿"Customer Name", "RD Development"
-"E55FD39C-C5FA-4BA9-8A6C-0A950C644380", "RD", "Results Direct Emulator", "1.2.0.105", 5
-"2C90A908-42CE-4FEC-9346-AC26168D8C2B", "CS", "Customer System Simulator", "1.2.0.327", 6

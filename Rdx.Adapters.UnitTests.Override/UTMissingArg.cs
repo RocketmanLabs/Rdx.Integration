@@ -1,7 +1,7 @@
 ﻿using Rdx.ActionInterface;
 using Rdx.Core;
 
-namespace Rdx.Adapters.Demonstrator.Greetings;
+namespace Rdx.Adapters.UnitTests.Override;
 
 /*:::::::::::::::::::::::::::::::::::::
 RDX Action: UTMissingArg (Override)
@@ -35,7 +35,7 @@ public class UTMissingArg : _RdxAction
         new Args(
             new Arg("x", "1", "fake arg"),
             new Arg("y", "2", "fake arg"),
-            new Arg("z", "3", "fake arg")
+            new Arg("z", "3", "fake arg")   // all better!
             ))
     { }
 

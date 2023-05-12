@@ -22,7 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Rdx.ActionInterface\Rdx.ActionInterface.csproj" />
     <ProjectReference Include="..\Rdx.Core\Rdx.Core.csproj" />
+    <ProjectReference Include="..\Rdx.DataConnection\Rdx.DataConnection.csproj" />
   </ItemGroup>
 
 </Project>

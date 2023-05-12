@@ -2,7 +2,6 @@
 using Rdx.Core;
 
 namespace Rdx.Adapters.Demonstrator.Greetings;
-
 /*:::::::::::::::::::::::::::::::::::::
 RDX Action: Goodbye 
 -------------------

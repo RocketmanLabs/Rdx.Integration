@@ -2,6 +2,8 @@
 using Rdx.Core;
 using Rdx.Core.Exceptions;
 using System;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Rdx.DataConnection;
 
@@ -12,133 +14,135 @@ namespace Rdx.DataConnection;
 /// </summary>
 public partial class RdxDataConnector
 {
-    private ExternalSystems _sysDefs;
-    private AdapterCatalog _adapters = new();  
+    private readonly ExternalSystems _xs;
+    private AdapterCatalog _adapters = new();
     private ActionCatalog _actions = new();
 
     public RdxDataConnector(ExternalSystems sysDefs)
     {
-        _sysDefs = sysDefs;
+        _xs = sysDefs;
     }
 
     public string? Key { get; set; }
     public SystemConnection? Originator { get; private set; }
     public SystemConnection? Receiver { get; private set; }
+    public ExternalSystems? SysConns { get; private set; }
+    public Stack<Exception> Errors { get; private set; } = new();
+    public string ErrorMessages => HasErrors
+        ? String.Join("; ", Errors.Select(x=> x.GetType().Name + ": " + x.Message))
+        : "";
+    public bool HasErrors => Errors.Any();
 
-    public static StatusCode Discovery()
+    private const string DLLPATTERN = "*.dll";
+
+    public StatusCode Discovery()
     {
         try
         {
-            // TODO: Read file into a new ExternalSystems instance
-            // TODO: Scan DLLs, creating an AdapterFile for each
-            // TODO: Test AdapterFiles against the ExternalSystems to see if they match
-            // TODO: Load the DLLs 
-            // TODO: Create the AdapterCatalog
+            SysConns = _xs;
 
-            // TODO: Create the ActionCatalog
+            // Create the AdapterCatalog - scan DLLs, creating an AdapterFile for each
+            var current = Directory.GetCurrentDirectory();
+            foreach (string file in Directory.GetFiles(current, DLLPATTERN))
+            {
+                AdapterFile adf = new(file, isOverride: false);
+                _adapters.Add(adf);
+            }
+
+            // TODO: Test AdapterFiles against the ExternalSystems to see if they match
+
+            // Load the DLLs
+            foreach (AdapterFile adf in _adapters.Values)
+            {
+                var asm = LoadDll(adf.Key);
+                if (asm is null) throw new RdxNullException($"Failed to load assembly for DLL located at '{adf.Key}'.");
+
+                // Contribute to the ActionCatalog
+                ExtractActions(asm, adf);
+            }
+
             // TODO: Create HttpClient instances for each system
             // TODO: sign in using the endpoint and credentials
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
-            response.Errors.Push(ex);
-            response.Message = $"Etl halted in Adapter '{Key}', encounterd error will retrieving '{request.Endpoint}'.";
+            Errors.Push(ex);
             return StatusCode.ERROR;
         }
         return StatusCode.OK;
     }
 
-    /// <summary>
-    /// The ETL method performs the following:
-    /// 
-    /// 1. Checks the upstream and downstream external systems and ensures
-    /// they have both authenticated this service.  
-    /// 2. Looks up the Action class (type == _RdxAction) and calls its Validate, 
-    /// EtlExtract, EtlFormatReturn methods.
-    /// 3. Calls the CS 1..n times to gather the necessary data elements needed
-    /// to fulfill the request.
-    /// 4. Reformats the returned data to the requested data model.
-    /// 5. Posts the return data to the RD Product.
-    /// 6. Any errors encountered are stored in the response packet.
-    /// </summary>
-    protected virtual StatusCode Etl(SystemConnection rd, SystemConnection cs, Rq request, Rs response)
+    public Assembly? LoadDll(string path)
     {
-        // Ensure RDX is linked to the RD Product ("originator") and the CS
-        // ("receiver") and both have authenticated this service.
-        response.Errors.Clear();
+        string pluginLocation = Path.GetFullPath(path.Replace('\\', Path.DirectorySeparatorChar));
+        ExtensibilityLoadContext loadContext = new(pluginLocation);
 
-        try
+        return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginLocation)));
+    }
+
+    /// <summary>
+    /// Loads the ActionCatalog from the assembly.
+    /// </summary>
+    public StatusCode ExtractActions(Assembly asm, AdapterFile adf)
+    {
+        // examine all Types in the assembly
+        foreach (Type type in asm.GetTypes())
         {
-            Originator = rd;
-            Receiver = cs;
-
-            if (rd.IsEmpty) throw new RdxInvalidInstanceException($"The connection to the originating system cannot be empty.");
-            if (cs.IsEmpty) throw new RdxInvalidInstanceException($"The connection to the receiving system cannot be empty.");
-            if (!rd.IsAuthenticated) throw new RdxInvalidInstanceException($"This service has not been authenticated to the originating system.");
-            if (!cs.IsAuthenticated) throw new RdxInvalidInstanceException($"This service has not been authenticated to the receiving system.");
-        }
-        catch (Exception ex)
-        {
-            response.Errors.Push(ex);
-            response.Message = $"Etl halted in Adapter '{Key}', encounterd error will retrieving '{request.Endpoint}'.";
-            return StatusCode.ERROR;
-        }
-
-        _RdxAction? action = null;
-
-        // E = Extract: find and call the appropriate Action, which does the actual 
-        // extraction in _RdxAction.EtlExtract() method.  Any exceptions that occur
-        // are recorded in the response packet.
-        try
-        {
-            action = _actions.Find(request.Endpoint);
-
-            if (action is null) throw new RdxInvalidOperationException($"Error encountered during retrieval of '{request.Endpoint}'.");
-
-            if (action.EtlExtract(rd, request, response) != StatusCode.OK)
+            // continue processing if a given type is (or inherits from) _RdxAction
+            if (typeof(_RdxAction).IsAssignableFrom(type))
             {
-                response.Message = $"Etl halted in Adapter '{Key}', encountered error while extracting data using '{request.Endpoint}.";
-                return StatusCode.ERROR;
-            }
-        }
-        catch (Exception ex)
-        {
-            response.Errors.Push(ex);
-            response.Message = $"Etl halted in Adapter '{Key}', encountered error while extracting data using '{request.Endpoint}.";
-            return StatusCode.ERROR;
-        }
+                _RdxAction? action = Activator.CreateInstance(type) as _RdxAction;
 
-        // T = Transform: reassembles responses from the customer system in _RdxAction.EtlFormatReturn().
-        try
-        {
-            if (action.EtlFormatReturn(rd, request, response) != StatusCode.OK)
-            {
-                response.Message = $"Etl halted in Adapter '{Key}', encountered error while transforming data using '{request.Endpoint}.";
-                return StatusCode.ERROR;
+                // If CreateInstance() was successful, add to ActionCatalog
+                if (action is not null)
+                {
+                    // if ActionCatalog.Add() results in an error, capture it and return StatusCode.ERROR
+                    if (_actions.Add(adf.Key, action, adf.IsOverride) != StatusCode.OK)
+                    {
+                        if (_actions.HasError)
+                        {
+                            throw _actions.Error!;
+                        }
+                        else
+                        {
+                            throw new RdxInvalidOperationException($"Error encountered while appending Action Catalog: {_actions.Error!.Message}");
+                        }
+                    }
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            response.Errors.Push(ex);
-            response.Message = $"Etl halted in Adapter '{Key}', encountered error while transforming data using '{request.Endpoint}.";
-            return StatusCode.ERROR;
-        }
-
-        // L = Load: calls the RD product and sends the reformatted response.
-        try
-        {
-            // TODO: send request.ReturnValue to RD Product
-            //if (???)
-            //{
-            //    response.Message = $"Error encountered during return of data using '{request.Endpoint}'.";
-            //    return StatusCode.ERROR;
-            //}
-        }
-        catch (Exception ex)
-        {
-            response.Errors.Push(ex);
-            response.Message = $"Error encountered during return of data using '{request.Endpoint}'.";
-            return StatusCode.ERROR;
         }
         return StatusCode.OK;
+    }
+}
+
+public class ExtensibilityLoadContext : AssemblyLoadContext
+{
+    private AssemblyDependencyResolver _resolver;
+
+    public ExtensibilityLoadContext(string pluginPath)
+    {
+        _resolver = new AssemblyDependencyResolver(pluginPath);
+    }
+
+    protected override Assembly? Load(AssemblyName assemblyName)
+    {
+        string? assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+        if (assemblyPath != null)
+        {
+            return LoadFromAssemblyPath(assemblyPath);
+        }
+
+        return null;
+    }
+
+    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    {
+        string? libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+        if (libraryPath != null)
+        {
+            return LoadUnmanagedDllFromPath(libraryPath);
+        }
+
+        return IntPtr.Zero;
     }
 }

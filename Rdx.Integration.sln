@@ -17,6 +17,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rdx.UnitTests", "Rdx.UnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rdx.DataConnection", "Rdx.DataConnection\Rdx.DataConnection.csproj", "{5E1DEA51-DC44-44AB-98C3-365218FB68DB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OG Extensibility", "OG Extensibility", "{D0C91254-1F2C-4E9B-91E8-721CDF6FCCCA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppWithPlugin", "..\..\RDX Archive\OGAppWithPlugin\AppWithPlugin\AppWithPlugin.csproj", "{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GoodbyePlugin", "..\..\RDX Archive\OGAppWithPlugin\GoodbyePlugin\GoodbyePlugin.csproj", "{B3597CB8-0340-425C-B4D0-CC69573FE32A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloPlugin", "..\..\RDX Archive\OGAppWithPlugin\HelloPlugin\HelloPlugin.csproj", "{573DECB7-297E-41D5-B95E-204825C61583}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlugInBase", "..\..\RDX Archive\OGAppWithPlugin\PlugInBase\PlugInBase.csproj", "{D597D85E-FF89-4118-8616-46E133F5034C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,9 +61,31 @@ Global
 		{5E1DEA51-DC44-44AB-98C3-365218FB68DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E1DEA51-DC44-44AB-98C3-365218FB68DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E1DEA51-DC44-44AB-98C3-365218FB68DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3597CB8-0340-425C-B4D0-CC69573FE32A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3597CB8-0340-425C-B4D0-CC69573FE32A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3597CB8-0340-425C-B4D0-CC69573FE32A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3597CB8-0340-425C-B4D0-CC69573FE32A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{573DECB7-297E-41D5-B95E-204825C61583}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{573DECB7-297E-41D5-B95E-204825C61583}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{573DECB7-297E-41D5-B95E-204825C61583}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{573DECB7-297E-41D5-B95E-204825C61583}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D597D85E-FF89-4118-8616-46E133F5034C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D597D85E-FF89-4118-8616-46E133F5034C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D597D85E-FF89-4118-8616-46E133F5034C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D597D85E-FF89-4118-8616-46E133F5034C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8A6F5438-2C25-40FD-8F81-CAF169ECC1F4} = {D0C91254-1F2C-4E9B-91E8-721CDF6FCCCA}
+		{B3597CB8-0340-425C-B4D0-CC69573FE32A} = {D0C91254-1F2C-4E9B-91E8-721CDF6FCCCA}
+		{573DECB7-297E-41D5-B95E-204825C61583} = {D0C91254-1F2C-4E9B-91E8-721CDF6FCCCA}
+		{D597D85E-FF89-4118-8616-46E133F5034C} = {D0C91254-1F2C-4E9B-91E8-721CDF6FCCCA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B233FB0A-1335-472B-BE67-226D5CA6ADA7}

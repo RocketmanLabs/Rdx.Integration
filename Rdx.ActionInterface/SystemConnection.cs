@@ -5,7 +5,7 @@ using System.Net;
 
 namespace Rdx.ActionInterface;
 
-public class SystemConnection : SystemDefinition, ISystemConnection
+public record SystemConnection : SystemDefinition, ISystemConnection
 {
     private Uri Url;
 

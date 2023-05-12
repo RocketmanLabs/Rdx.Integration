@@ -1,10 +1,9 @@
-﻿using Rdx.ActionInterface.Interfaces;
-using Rdx.Core;
+﻿using Rdx.Core;
 using Rdx.Core.Exceptions;
 
 namespace Rdx.ActionInterface;
 
-    /*
+/*
      _RdxAction: 
         string? Key { get; }
         Args ExpectedCriteria { get; }
@@ -12,10 +11,7 @@ namespace Rdx.ActionInterface;
         StatusCode Validate(Rq request, Rs response);
         string EtlExtract(SystemConnection cs, Rq request, Rs response);
         string EtlFormatReturn(SystemConnection rdProduct, Rq request, Rs response);
-
-        bool HasError { get; }
-        Stack<Exception> Errors { get; }
-     */
+*/
 
 /// <summary>
 /// Base class for all Action classes. An Action class represents a single ETL

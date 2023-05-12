@@ -1,6 +1,7 @@
 using Rdx.Core;
 
 namespace Rdx.UnitTests;
+
 public class Tests_for_SystemDefinition
 {
     [Fact]
@@ -51,7 +52,7 @@ public class Tests_for_SystemDefinition
     public void SysDef_SUCCESS_creating_Mock_RD()
     {
         var id = Guid.NewGuid().ToString();
-        var sysdef = SystemDefinitionFactory.BuildCustomerSystem(id, "ENG", "Engagefully", "4.3.2.111", isMock: true);
+        var sysdef = SystemDefinitionFactory.BuildRdProduct(id, "ENG", "Engagefully", "4.3.2.111", isMock: true);
 
         Assert.Equal(ExternalSystemCode.RD | ExternalSystemCode.MOCK, sysdef.ExternalType);
     }
